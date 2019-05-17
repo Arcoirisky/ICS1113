@@ -92,12 +92,10 @@ class Simplex2:
             for elem in self.vals:
                 if elem not in self.base:
                     self.Nobase.append(elem)
-        #print(self.Nobase)
-        #print(self.base)
-
+        
         for elem in self.Nobase:
             c_d.append(self.c[int(elem[1:])])
-        #print(self.c)
+        
         for elem in self.base:
             c_b.append(self.c[int(elem[1:])])
         return c_d, c_b
@@ -105,17 +103,20 @@ class Simplex2:
     def minvar(self, entra):
         lista = []
         i = 0
-        #print(self.NoR[int(entra[1:])].tolist()[0], 'AAAAAAAAAAAH')
         a_jk = self.Acols[entra]
-        #print(self.Nob.tolist())
-        #print(a_jk)
+        print(a_jk)
+        print(self.Nob.tolist())
+        
         for elem in self.Nob.tolist():
-            if a_jk[i] != 0 and elem[0]/a_jk[i] > 0:
-                lista.append(elem[0]/a_jk[i])
+            if a_jk[i] != 0:
+                if elem[0]/a_jk[i] > 0:
+                    lista.append(elem[0]/a_jk[i])
+                else:
+                    lista.append(2**90)
             else:
                 lista.append(2**90)
             i+=1
-        #print("lista",lista, min(lista))
+        print('listaa', lista)
         sale = self.base[lista.index(min(lista))]
         return sale
 
@@ -137,49 +138,99 @@ class Simplex2:
         return False
 
     def reset_bases(self, entra, sale):
+        base_1 = [self.pVar(n) for n in self.base]
+        print('old base:', ' - '.join(base_1))
+        Nobase_1 = [self.pVar(n) for n in self.Nobase]
+        print('old no base:', ' - '.join(Nobase_1))
         pos = self.base.index(sale)
         self.base = list(x if (x != sale) else entra for x in self.base)
         base = [self.pVar(n) for n in self.base]
         
-        print('new base: {}, {}, {}'.format(*base))
+        print('new base:', ' - '.join(base))
         self.bases_ext.base = self.base
         pos = self.Nobase.index(entra)
         self.Nobase[pos] = sale
         Nobase = [self.pVar(n) for n in self.Nobase]
         
-        print('new No base: {}, {}'.format(*Nobase))
+        print('new No base:',' - '.join(Nobase))
         self.bases_ext.sacar_base()
         self.desempaquetar_bases()
         self.optimo_question()
 
+    def saber_entra(self, costo):
+        # Siempre ingresar la variable de costo red neg de menor indice
+        # con empate se mete la de menor indice igual
+        neg = 0
+        copia = []
+        i = 0
+        for elem in costo:
+            if elem < 0:
+                neg += 1
+                copia.append((i, elem))
+            i+= 1
+        count = costo.count(min(costo))
+        print(count, "AAAAAAAAAAAAAAAAAAAAAAH")
+        if count > 1:
+            return self.Nobase[sorted(copia)[0][0]]
+        else:
+            return self.Nobase[costo.index(min(costo))]
+        
     def optimo_question(self):
         c_d, c_b = self.separar_c()
         costo = (matrix(c_d) - matrix(c_b)*self.NoR).tolist()[0]
-        #print(c_d)
-        #print(c_b)
-        #print(self.NoR)
-
-        #print(costo)
+        print(costo)
         if self.negativo_question(costo):
             # Esto es en caso de que no sea el optimo
-            entra = self.Nobase[costo.index(min(costo))]
+            entra = self.saber_entra(costo)
             print('entra:', self.pVar(entra))
             sale = self.minvar(entra)
             print('sale:', self.pVar(sale))
             # Ahora se supone que debería modificar la base y repetir
             self.reset_bases(entra, sale)
         else:
-            print("Finalmente!! U DID IT")
+            base = [self.pVar(n) for n in self.base]
+            print("Finalmente!! U DID IT {", ' , '.join(base),'}')
             return True
 
 if __name__ == '__main__':
-    A = array([[2,4,1,0,0],
-               [6,2,0,1,0],
-               [0,1,0,0,1]])
-    b = matrix([[1600],
-                [1800],
-                [350]])
-    c = [-3,-8,0,0,0]
+    ### Normal
+    a = [[2,4,1,0,0],[6,2,0,1,0],[0,1,0,0,1]]
+    b = [[1600],[1800],[350]]
+    c_x = [-3,-8,0,0,0]
+    
+    ### Multiple Directo
+    #a = [[-1,3,1,0],[2,1,0,1]]
+    #b = [[9],[6]]
+    #c_x = [-2,-1,0,0]
+
+    ### Multiple Chef
+    #a = 
+    #b = 
+    #c_x = 
+
+    ### Ciclaje 1 -- Lindo
+    #a = [[2,1,1,0,0],[0,3,0,1,0],[6,9,0,0,1]]
+    #b = [[2], [2], [10]]
+    #c_x = [-1,-1,0,0,0]
+
+    ### Deg - Ciclaje -- revisar signo c_x[0]
+    #a = [[1,-11,-5,18,1,0,0],[1,-3,-1,2,0,1,0],[1,0,0,0,0,0,1]]
+    #b = [[0], [0], [1]]
+    #c_x = [10,57,9,24,0,0,0]
+
+    ### Deg -- Aún no lista
+    a = [[1/4,-60,-1/25,9,1,0,0],[1/2,-90,-1/50,3,0,1,0],[0,0,1,0,0,0,1]]
+    b = [[0],[0],[1]]
+    c_x =[-3/4,150,-1/50,0,0,0,0]
+
+    ### Deg -- Aún no lista
+    #a = [[1,1,1,0],[-1,1,0,1]]
+    #b = [[1],[0]]
+    #c_x =[-1,1,0,0]
+
+    A = array(a)
+    b = matrix(b)
+    c = c_x
     S = Simplex2(A,b,c)
     S.optimo_question()
     
